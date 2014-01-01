@@ -241,6 +241,16 @@ class Kohana_JSend {
 	}
 	
 	/**
+	 * Return $this->_data as an array
+	 * 
+	 * @return array
+	 */
+	public function as_array()
+	{
+		return $this->_data;
+	}
+
+	/**
 	 * Binds a param by reference
 	 * 
 	 * @chainable
