@@ -1,8 +1,10 @@
 {
     "name": "alle/kohana-jsend",
+	"type":  "kohana-module",
     "description": "JSend model for Kohana 3.3 (consistent JSON responses)",
+	"homepage": "https://github.com/alle/kohana-jsend",
 	"license": "MMIT",
-	"keywords": ["kohana", "framework", "json"],
+	"keywords": ["kohana", "framework", "module", "json"],
     "authors": [
         {
             "name": "Kemal Delalic",
@@ -18,13 +20,7 @@
     ],
     "require": {
 		"composer/installers": "~1.0",
-		"kohana/core": ">=3.0",
+		"kohana/core": ">=3.3",
 		"php": ">=5.3.3"
-    },
-	"repositories": [
-		{
-			"type": "vcs",
-			"url": "https://github.com/alle/kohana-jsend"
-		}
-	]
+    }
 }
