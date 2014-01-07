@@ -4,11 +4,11 @@
  *
  * @author	Kemal Delalic <github.com/kemo>
  * @see		http://labs.omniti.com/labs/jsend
- */ 
+ */
 class Kohana_JSend {
 
 	const DEFAULT_ASSOC = FALSE;    // Default $assoc is FALSE
-	const DEFAULT_DEPTH = 512;      // Default $depth is 512	
+	const DEFAULT_DEPTH = 512;      // Default $depth is 512
 	const DEFAULT_OPTIONS = 0;      // Default $options is 0
 
 	const ERROR     = 'error';      // Execution errors; exceptions, etc.
@@ -16,7 +16,7 @@ class Kohana_JSend {
 	const SUCCESS   = 'success';    // Default status: everything seems to be OK
 
 	const VERSION   = '1.4.0';      // Release version
-	
+
 	/**
 	 * @var array   Valid status types
 	 */
@@ -25,10 +25,16 @@ class Kohana_JSend {
 		JSend::FAIL,
 		JSend::SUCCESS,
 	);
-	
+
+	/**
+	 * @var bool enable JSON vulnerability protection
+	 */
+	protected $_protected_data = FALSE;
+
+
 	/**
 	 * Checks if an error occured during the last json_encode() / json_decode() operation
-	 * 
+	 *
 	 * @param   mixed   $passthrough var to return (in case exception isn't thrown)
 	 * @return  mixed   $passthrough
 	 * @throws  JSend_Exception
@@ -36,16 +42,16 @@ class Kohana_JSend {
 	public static function check_json_errors($passthrough = NULL)
 	{
 		$error = json_last_error();
-		
+
 		if ($error !== JSON_ERROR_NONE and $message = JSend_Exception::error_message($error))
 			throw new JSend_Exception($message, NULL, $error);
-			
+
 		return $passthrough;
 	}
-	
+
 	/**
-	 * Decodes a value to JSON 
-	 * 
+	 * Decodes a value to JSON
+	 *
 	 * This is a proxy method to json_decode() with proper exception handling
 	 *
 	 * @param   string  $json       The JSON string being decoded.
@@ -61,29 +67,29 @@ class Kohana_JSend {
 		{
 			$assoc = JSend::DEFAULT_ASSOC;
 		}
-		
+
 		if ($depth === NULL)
 		{
 			$depth = JSend::DEFAULT_DEPTH;
 		}
-		
+
 		if ($options === NULL)
 		{
 			$options = JSend::DEFAULT_OPTIONS;
 		}
-		
+
 		$result = version_compare(PHP_VERSION, '5.4') < 0
 			? json_decode($json, $assoc, $depth)
 			: json_decode($json, $assoc, $depth, $options);
-		
+
 		return JSend::check_json_errors($result);
 	}
-	
+
 	/**
 	 * Encodes a value to JSON
 	 *
 	 * This is a proxy method to json_encode() with proper exception handling
-	 * 
+	 *
 	 * @param   mixed   $value
 	 * @param   int     $options bitmask
 	 * @return  string  JSON encoded
@@ -95,13 +101,13 @@ class Kohana_JSend {
 		{
 			$options = JSend::DEFAULT_OPTIONS;
 		}
-		
+
 		// Encode the value to JSON and check for errors
 		$result = json_encode($value, $options);
-		
+
 		return JSend::check_json_errors($result);
 	}
-	
+
 	/**
 	 * Factory method
 	 *
@@ -111,7 +117,7 @@ class Kohana_JSend {
 	{
 		return new JSend($data);
 	}
-	
+
 	/**
 	 * Default method for rendering objects into their values equivalent
 	 *
@@ -121,10 +127,10 @@ class Kohana_JSend {
 	 *     {
 	 *         if ($object instanceof SomeClass)
 	 *             return $object->some_method();
-	 *     
+	 *
 	 *         return parent::object_values($object);
 	 *     }
-	 * 
+	 *
 	 * @param   object  $object
 	 * @return  mixed   Value to encode (e.g. array, string, int)
 	 */
@@ -136,35 +142,35 @@ class Kohana_JSend {
 		 */
 		if ($object instanceof JsonSerializable)
 			return $object->jsonSerialize();
-			
+
 		if ($object instanceof ORM or $object instanceof AutoModeler)
 			return $object->as_array();
-			
+
 		if ($object instanceof ORM_Validation_Exception)
 			return $object->errors('');
-			
+
 		if ($object instanceof Database_Result)
 		{
 			$items = array();
-			
+
 			foreach ($object as $result)
 			{
 				$items[] = JSend::object_values($result);
 			}
-			
+
 			return $items;
 		}
-		
+
 		if ($object instanceof ArrayObject)
 			return $object->getArrayCopy();
-			
+
 		if (method_exists($object, '__toString'))
 			return (string) $object;
-		
+
 		// If no matches, return the whole object
 		return $object;
 	}
-	
+
 	/**
 	 * @var int     Status code
 	 */
@@ -174,22 +180,22 @@ class Kohana_JSend {
 	 * @var array   Return data
 	 */
 	protected $_data = array();
-	
+
 	/**
 	 * @var int     Status message
 	 */
 	protected $_message;
-	
+
 	/**
 	 * @var string  Status (success, fail, error)
 	 */
 	protected $_status = JSend::SUCCESS;
-	
+
 	/**
 	 * @var array   Array of key => callback render-time filters
 	 */
 	protected $_filters = array();
-	
+
 	/**
 	 * @param   array   initial array of data
 	 */
@@ -200,7 +206,7 @@ class Kohana_JSend {
 			$this->set($data);
 		}
 	}
-	
+
 	/**
 	 * Magic getter method
 	 */
@@ -208,11 +214,11 @@ class Kohana_JSend {
 	{
 		if (array_key_exists($key, $this->_data))
 			return $this->_data[$key];
-		
+
 		throw new JSend_Exception('Nonexisting data key requested: :key',
 			array(':key' => $key));
 	}
-	
+
 	/**
 	 * Magic setter method
 	 */
@@ -220,7 +226,7 @@ class Kohana_JSend {
 	{
 		return $this->set($key, $value);
 	}
-	
+
 	/**
 	 * More magic: what happens when echoed or casted to string?
 	 */
@@ -233,16 +239,16 @@ class Kohana_JSend {
 		catch (Exception $e)
 		{
 			ob_start();
-			
+
 			JSend_Exception::handler($e);
 
 			return (string) ob_get_clean();
 		}
 	}
-	
+
 	/**
 	 * Return $this->_data as an array
-	 * 
+	 *
 	 * @return array
 	 */
 	public function as_array()
@@ -252,7 +258,7 @@ class Kohana_JSend {
 
 	/**
 	 * Binds a param by reference
-	 * 
+	 *
 	 * @chainable
 	 * @param   string  $key
 	 * @param   mixed   $value to reference
@@ -261,13 +267,13 @@ class Kohana_JSend {
 	public function bind($key, & $value)
 	{
 		$this->_data[$key] =& $value;
-		
+
 		return $this;
 	}
 
 	/**
 	 * Data filter getter / setter
-	 * 
+	 *
 	 * @param   string  $key (returns the whole filters array if NULL)
 	 * @param   mixed   $filter (set to FALSE to remove)
 	 * @return  $this   (on set)
@@ -277,23 +283,23 @@ class Kohana_JSend {
 	{
 		if ($key === NULL)
 			return $this->_filters;
-			
+
 		if (is_array($key))
 		{
 			// Clean the current filters array
 			$this->_filters = array();
-			
+
 			foreach ($key as $_key => $_filter)
 			{
 				$this->filter($_key, $_filter);
 			}
-			
+
 			return $this;
 		}
-		
+
 		if ($filter === NULL)
 			return Arr::get($this->_filters, $key);
-		
+
 		if ($filter === FALSE)
 		{
 			unset($this->_filters[$key]);
@@ -302,13 +308,13 @@ class Kohana_JSend {
 		{
 			$this->_filters[$key] = $filter;
 		}
-		
+
 		return $this;
 	}
-	
+
 	/**
 	 * Data getter (Arr::path() enabled)
-	 * 
+	 *
 	 * @param   string  $path to get, e.g. 'post.name'
 	 * @param   mixed   $default value
 	 * @return  mixed   Path value or $default (if path doesn't exist)
@@ -317,12 +323,12 @@ class Kohana_JSend {
 	{
 		return Arr::path($this->_data, $path, $default);
 	}
-	
+
 	/**
 	 * Sets a key => value pair or the whole data array
-	 * 
+	 *
 	 * Example with callback (for setting objects):
-	 * 
+	 *
 	 *     $jsend->set('foo', new Model_Bar, 'Foo::bar');
 	 *
 	 * @chainable
@@ -339,31 +345,31 @@ class Kohana_JSend {
 		if (is_array($key))
 		{
 			$this->_data = array();
-			
+
 			foreach ($key as $_key => $_value)
 			{
 				$this->set($_key, $_value);
 			}
-			
+
 			return $this;
 		}
-		
+
 		$this->_data[$key]    = $value;
 		$this->_filters[$key] = $filter;
-		
+
 		return $this;
 	}
-	
+
 	/**
 	 * Returns a callable function for extracting object data
-	 * 
+	 *
 	 * @return  callable
 	 */
 	public function default_callback()
 	{
 		return 'JSend::object_values';
 	}
-	
+
 	/**
 	 * Response code getter / setter
 	 *
@@ -375,12 +381,12 @@ class Kohana_JSend {
 	{
 		if ($code === NULL)
 			return $this->_code;
-		
+
 		$this->_code = (int) $code;
-		
+
 		return $this;
 	}
-	
+
 	/**
 	 * Data getter (whole data array) / proxy to set()
 	 *
@@ -395,15 +401,15 @@ class Kohana_JSend {
 		// If key is empty, use as getter
 		if ($key === NULL)
 			return $this->_data;
-			
+
 		return $this->set($key, $value, $filter);
 	}
-	
+
 	/**
 	 * Response message getter / setter
-	 * 
+	 *
 	 * [!!] This will set status to JSend::ERROR
-	 * 
+	 *
 	 * @chainable
 	 * @param   mixed   $message string or Exception object
 	 * @param   array   $values to use for translation
@@ -414,7 +420,7 @@ class Kohana_JSend {
 	{
 		if ($message === NULL)
 			return $this->_message;
-		
+
 		if ($message instanceof Exception)
 		{
 			// If the code hasn't been set, use Exception code
@@ -422,7 +428,7 @@ class Kohana_JSend {
 			{
 				$this->code($code);
 			}
-			
+
 			// Use the exception message in response
 			$this->_message = __(':class: :message', array(
 				':class' 	=> get_class($message),
@@ -433,16 +439,16 @@ class Kohana_JSend {
 		{
 			$this->_message = __($message, $values);
 		}
-		
+
 		/**
-		 * Set the status to error 
+		 * Set the status to error
 		 * (response message is used *only* for error responses)
 		 */
 		$this->_status = JSend::ERROR;
-		
+
 		return $this;
 	}
-	
+
 	/**
 	 * Response status getter / setter
 	 *
@@ -455,21 +461,21 @@ class Kohana_JSend {
 	{
 		if ($status === NULL)
 			return $this->_status;
-		
+
 		if ( ! in_array($status, JSend::$_status_types, TRUE))
 		{
 			throw new JSend_Exception('Status must be one of these: :statuses',
 				array(':statuses' => implode(', ', JSend::$_status_types)));
 		}
-		
+
 		$this->_status = $status;
-		
+
 		return $this;
 	}
-	
+
 	/**
 	 * Renders the current object into JSend (JSON) string
-	 * 
+	 *
 	 * @param   int     $encode_options json_encode() options bitmask
 	 * @return  string  JSON representation of current object
 	 * @see     http://php.net/json_encode#refsect1-function.json-encode-parameters
@@ -477,18 +483,18 @@ class Kohana_JSend {
 	public function render($encode_options = NULL)
 	{
 		$data = array();
-		
+
 		foreach ($this->_data as $key => $value)
 		{
 			$filter     = Arr::get($this->_filters, $key);
 			$data[$key] = $this->run_filter($value, $filter);
 		}
-		
+
 		$result = array(
 			'status' => $this->_status,
 			'data'   => $data,
 		);
-		
+
 		/**
 		 * Error response must contain status & message
 		 * while code & data are optional
@@ -496,18 +502,18 @@ class Kohana_JSend {
 		if ($this->_status === JSend::ERROR)
 		{
 			$result['message'] = $this->_message;
-			
+
 			if ($this->_code !== NULL)
 			{
 				$result['code'] = $this->_code;
 			}
-			
+
 			if (empty($result['data']))
 			{
 				unset($result['data']);
 			}
 		}
-		
+
 		try
 		{
 			$response = JSend::encode($result, $encode_options);
@@ -519,14 +525,16 @@ class Kohana_JSend {
 				->message($e)
 				->render();
 		}
-		
+
+		$this->protect() AND $response = ')]}\','.PHP_EOL.$response;
+
 		return $response;
 	}
-	
+
 	/**
 	 * Sets the required HTTP Response headers and body.
 	 *
-	 * [!!] This is the last method you call because 
+	 * [!!] This is the last method you call because
 	 *     *Response body is casted to string the moment it's set*
 	 *
 	 * Example action:
@@ -544,12 +552,12 @@ class Kohana_JSend {
 	{
 		$response->body($this->render($encode_options))
 			->headers('content-type','application/json')
-			->headers('x-response-format','jsend'); 
+			->headers('x-response-format','jsend');
 	}
-	
+
 	/**
 	 * Runs the passed filter on a value
-	 * 
+	 *
 	 * @param    mixed $value
 	 * @param    mixed $filter
 	 * @return   mixed
@@ -559,7 +567,7 @@ class Kohana_JSend {
 		// If filter is set to FALSE, object won't be filtered at all
 		if ($filter === FALSE)
 			return $value;
-		
+
 		if (is_object($value))
 		{
 			$filter = $filter ?: $this->default_callback();
@@ -573,5 +581,23 @@ class Kohana_JSend {
 
 		return $value;
 	}
-	
+
+	/**
+	 * Check or enable JSON vulnerability protection
+	 *
+	 * @param mixed $protect NULL or bool to enable protected output
+	 * @link http://docs.angularjs.org/api/ng.$http#description_security-considerations_json-vulnerability-protection JSON Vulnerability Protection
+	 *
+	 * @return JSend
+	 */
+	public function protect($protect = NULL)
+	{
+		if ($protect === NULL)
+			return $this->_protected_data;
+
+		$this->_protected_data = (bool) $protect;
+
+		return $this;
+	}
+
 }
